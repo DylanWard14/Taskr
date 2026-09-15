@@ -1,5 +1,5 @@
 import { apiFetch } from '../../../lib/api-client'
-import type { Comment } from '../types'
+import type { Comment, CreateCommentInput } from '../types'
 
 interface RawComment {
   id: string
@@ -19,7 +19,10 @@ function toComment(raw: RawComment): Comment {
   }
 }
 
-export async function getComments(taskId: string): Promise<Comment[]> {
-  const raw = (await apiFetch(`/tasks/${taskId}/comments`)) as RawComment[]
-  return raw.map(toComment)
+export async function createComment(taskId: string, input: CreateCommentInput): Promise<Comment> {
+  const raw = (await apiFetch(`/tasks/${taskId}/comments`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })) as RawComment
+  return toComment(raw)
 }

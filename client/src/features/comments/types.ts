@@ -5,3 +5,8 @@ export interface Comment {
   body: string
   createdAt: string
 }
+
+export interface CreateCommentInput {
+  body: string
+  mediaIds?: string[]
+}
