@@ -122,11 +122,57 @@ Each `modules/<domain>` groups its route definitions, request validation, and bu
 
 ## Status
 
-This repository is not yet scaffolded — no source, package manifests, or build tooling exist yet. As the project is set up, update this file with:
+The repository is scaffolded: `client/` (Vite + React + TS + MUI) and `server/` (Hono + TS + Knex) exist with the module/feature structure described above, wired as npm workspaces from the root `package.json`. Feature modules currently contain minimal stubs (e.g. `teams`/`tasks`/`comments` routes return data with no real auth/business logic yet) — this is the base other work builds on.
 
-- Actual build/lint/dev commands, how to run a single test with Vitest, and how to run Cypress e2e tests, once a package manager is chosen
-- The `docker-compose.yml` services (frontend, backend, Postgres, etc.) and exact commands to build/run/tear down the stack
-- How `client/` and `server/` are wired together as packages (npm workspaces vs. independent packages, shared config, etc.)
-- Knex migration/seed conventions (how to run/create migrations) once `server/db/migrations` exists
-- Media storage approach for task/comment attachments (e.g. object storage vs. local disk, upload flow)
-- Any conventions for sharing types between frontend and backend
+### Packages / workspaces
+
+- Root `package.json` declares npm workspaces `["client", "server"]`. Run `npm install` once from the repo root — it installs both workspaces.
+- Root convenience scripts: `npm run dev:client`, `npm run dev:server`, `npm run build`, `npm run test`, `npm run lint` (each delegates to the matching workspace script via `--workspace`).
+- There are currently no shared/published types between `client/` and `server/` — each side defines its own domain types (`client/src/features/*/types.ts`, `server/src/modules/*/schema.ts`) shaped to match. Revisit if duplication becomes painful.
+
+### Build / lint / dev commands
+
+Run from the repo root, or `cd client` / `cd server` and drop the `--workspace` flag:
+
+- Dev servers: `npm run dev --workspace server` (Hono on `:3000`, via `tsx watch`), `npm run dev --workspace client` (Vite on `:5173`)
+- Build: `npm run build --workspace server` (`tsc`), `npm run build --workspace client` (`tsc -b && vite build`)
+- Lint: `npm run lint --workspace server` (ESLint), `npm run lint --workspace client` (oxlint)
+
+### Tests
+
+- Unit tests use Vitest in both workspaces:
+  - Run all: `npm run test --workspace server` / `npm run test --workspace client`
+  - Watch mode: `npm run test:watch --workspace server` / `npm run test:watch --workspace client`
+  - Run a single file: `npm run test --workspace server -- src/modules/teams/service.test.ts` (or `cd server && npx vitest run <path>`); same pattern for `client`
+  - Run a single test by name: append `-t "<test name pattern>"` to the above
+- Client component tests use `@testing-library/react` + jsdom, set up in `client/src/test/setup.ts` / `client/vitest.config.ts`.
+- E2E tests use Cypress, configured in `client/cypress.config.ts` against `http://localhost:5173`:
+  - Interactive: `npm run e2e:open --workspace client` (requires the dev stack running, e.g. via `docker compose up`)
+  - Headless: `npm run e2e --workspace client`
+
+### Docker Compose
+
+`docker-compose.yml` at the repo root defines three services:
+
+- `db` — Postgres 16, exposed on `5432`, credentials from `.env` (see `.env.example`), with a named volume `db-data` and a healthcheck the other services wait on
+- `server` — builds `server/Dockerfile`, exposed on `3000`, depends on `db` being healthy, source bind-mounted from `./server/src` for live editing
+- `client` — builds `client/Dockerfile`, exposed on `5173`, depends on `server`, source bind-mounted from `./client/src`
+
+Commands: `docker compose up --build` to build and run the stack, `docker compose down` to tear it down (`-v` also drops the `db-data` volume).
+
+Copy `.env.example` to `.env` before running Compose; it supplies `DB_*`, `JWT_SECRET`, `PORT`, and `VITE_API_BASE_URL`.
+
+### Knex migrations / seeds
+
+Migrations live in `server/src/db/migrations`, seeds in `server/src/db/seeds`, config in `server/src/db/knexfile.ts`. From `server/`:
+
+- Create a migration: `npm run migrate:make -- <name>`
+- Run migrations: `npm run migrate`
+- Roll back the last batch: `npm run migrate:rollback`
+- Run seeds: `npm run seed`
+
+The initial migration (`20260101000000_init.ts`) creates `users`, `teams`, `team_members` (many-to-many with a `role` enum: `owner`/`admin`/`member`), `tasks` (status/priority/assignee/due date), `comments`, and `media` (attachable to either a task or a comment).
+
+### Media storage
+
+Not yet implemented — `server/src/modules/media` is a stub (`POST /media/upload` returns 501). The `media` table already supports attaching an uploaded file to either a task or a comment via nullable `task_id`/`comment_id` foreign keys. Decide on local disk vs. object storage (e.g. S3-compatible) when building this out.
