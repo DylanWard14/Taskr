@@ -11,10 +11,11 @@ import type { User } from '../../features/auth/types'
 // app/routes.tsx), so — unlike a page with no params — it must be rendered
 // through the actual app router (via App + createAppRouter) rather than a
 // simplified standalone route tree, or `useParams()` won't resolve.
-const { getMeMock, getTeamMock, getTeamMembersMock } = vi.hoisted(() => ({
+const { getMeMock, getTeamMock, getTeamMembersMock, getTasksMock } = vi.hoisted(() => ({
   getMeMock: vi.fn(),
   getTeamMock: vi.fn(),
   getTeamMembersMock: vi.fn(),
+  getTasksMock: vi.fn(),
 }))
 
 vi.mock('../../features/auth/api/get-me', () => ({
@@ -27,6 +28,10 @@ vi.mock('../../features/teams/api/get-team', () => ({
 
 vi.mock('../../features/teams/api/get-team-members', () => ({
   getTeamMembers: getTeamMembersMock,
+}))
+
+vi.mock('../../features/tasks/api/get-tasks', () => ({
+  getTasks: getTasksMock,
 }))
 
 const testUser: User = { id: 'user-1', email: 'ada@example.com', name: 'Ada Lovelace' }
@@ -45,7 +50,9 @@ describe('TeamPage', () => {
     getMeMock.mockReset()
     getTeamMock.mockReset()
     getTeamMembersMock.mockReset()
+    getTasksMock.mockReset()
     getMeMock.mockResolvedValue(testUser)
+    getTasksMock.mockResolvedValue([])
   })
 
   it('shows a clear not-found state on a 404 (non-member or nonexistent team)', async () => {
@@ -72,7 +79,7 @@ describe('TeamPage', () => {
     expect(screen.getByText(/owner person/i)).toBeInTheDocument()
     // Viewer's own role here is "member" — no add-member form should render.
     expect(screen.queryByText(/add a member/i)).not.toBeInTheDocument()
-    expect(screen.getByText(/tasks board coming soon/i)).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /^tasks$/i })).toBeInTheDocument()
 
     // The $teamId route param was correctly extracted from the URL and used
     // for both queries, not a hardcoded/incorrect value.

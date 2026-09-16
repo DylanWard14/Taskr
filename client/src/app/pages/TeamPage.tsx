@@ -14,6 +14,7 @@ import { TeamSwitcher } from '../../features/teams/components/TeamSwitcher'
 import { useTeam } from '../../features/teams/hooks/useTeam'
 import { useTeamMembers } from '../../features/teams/hooks/useTeamMembers'
 import { canManageMembers } from '../../features/teams/permissions'
+import { TaskBoard } from '../../features/tasks/components/TaskBoard'
 import { ApiError } from '../../lib/api-client'
 import { teamRoute } from '../routes'
 
@@ -85,9 +86,7 @@ export function TeamPage() {
           )}
         </Paper>
 
-        <Paper variant="outlined" sx={{ p: 4, textAlign: 'center' }}>
-          <Typography color="text.secondary">Tasks board coming soon.</Typography>
-        </Paper>
+        <TaskBoard teamId={team.id} members={members} viewerRole={viewerRole} />
       </Stack>
     </Container>
   )
