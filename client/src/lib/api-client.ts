@@ -40,5 +40,11 @@ export async function apiFetch(path: string, init?: RequestInit) {
     throw new ApiError(message, res.status, details)
   }
 
+  // No-content responses (e.g. 204 from a DELETE) have no body to parse —
+  // calling res.json() on them would throw.
+  if (res.status === 204) {
+    return undefined
+  }
+
   return res.json()
 }

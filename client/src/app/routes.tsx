@@ -7,7 +7,9 @@ import {
 } from '@tanstack/react-router'
 import type { QueryClient } from '@tanstack/react-query'
 import { Layout } from './Layout'
+import { AuthenticatedLayout } from './AuthenticatedLayout'
 import { HomePage } from './pages/HomePage'
+import { TeamPage } from './pages/TeamPage'
 import { LoginPage } from './pages/LoginPage'
 import { SignupPage } from './pages/SignupPage'
 import { RouteErrorPage } from './pages/RouteErrorPage'
@@ -22,16 +24,32 @@ export const rootRoute = createRootRouteWithContext<RouterContext>()({
   component: Layout,
 })
 
-export const indexRoute = createRoute({
+// Pathless layout route: owns the "must be signed in" guard and renders the
+// persistent authenticated app shell (top bar). All authenticated pages
+// (`/`, `/teams/$teamId`, ...) nest under this instead of each repeating the
+// beforeLoad check/shell markup.
+export const authenticatedRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/',
+  id: 'authenticated',
   beforeLoad: async ({ context }) => {
     const user = await context.queryClient.ensureQueryData(currentUserQueryOptions())
     if (!user) {
       throw redirect({ to: '/login' })
     }
   },
+  component: AuthenticatedLayout,
+})
+
+export const indexRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/',
   component: HomePage,
+})
+
+export const teamRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/teams/$teamId',
+  component: TeamPage,
 })
 
 export const loginRoute = createRoute({
@@ -58,7 +76,11 @@ export const signupRoute = createRoute({
   component: SignupPage,
 })
 
-export const routeTree = rootRoute.addChildren([indexRoute, loginRoute, signupRoute])
+export const routeTree = rootRoute.addChildren([
+  authenticatedRoute.addChildren([indexRoute, teamRoute]),
+  loginRoute,
+  signupRoute,
+])
 
 export function createAppRouter(queryClient: QueryClient, history?: RouterHistory) {
   return createRouter({
