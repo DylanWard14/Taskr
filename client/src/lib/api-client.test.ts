@@ -36,6 +36,14 @@ describe('apiFetch', () => {
     expect(result).toEqual({ ok: true })
   })
 
+  it('resolves with undefined on a 204 No Content response', async () => {
+    vi.mocked(fetch).mockResolvedValue(nonJsonResponse(204, true))
+
+    const result = await apiFetch('/teams/team-1/members/user-1', { method: 'DELETE' })
+
+    expect(result).toBeUndefined()
+  })
+
   it('attaches the stored bearer token when present', async () => {
     localStorage.setItem(TOKEN_STORAGE_KEY, 'a-token')
     vi.mocked(fetch).mockResolvedValue(jsonResponse({}, 200, true))
