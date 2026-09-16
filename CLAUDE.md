@@ -13,7 +13,7 @@ Taskr is a team-based task management application. Users sign in, see the teams 
 
 ## Stack
 
-- **Frontend**: React + TypeScript, Material UI, built/served with [Vite](https://vitejs.dev/)
+- **Frontend**: React + TypeScript, Material UI, built/served with [Vite](https://vitejs.dev/). Routing is handled by [TanStack Router](https://tanstack.com/router); network requests/server state are handled by [TanStack Query](https://tanstack.com/query) rather than ad-hoc `fetch`/`useEffect` data loading.
 - **Backend**: TypeScript on [Hono](https://hono.dev/)
 - **Database**: PostgreSQL, accessed directly by the Hono backend via [Knex](https://knexjs.org/) as the query builder — Knex also handles schema migrations
 
@@ -29,31 +29,33 @@ The repo is split into two top-level folders:
 ```
 client/
   src/
-    app/                # app shell: routing, providers, layout
+    app/                # app shell: TanStack Router route tree/config, providers (incl. QueryClientProvider), layout
     features/
       auth/
         components/      # e.g. LoginForm
         api/              # login/logout requests, JWT handling
-        hooks/            # e.g. useAuth
+        hooks/            # e.g. useAuth — TanStack Query hooks wrapping api/
         types.ts
       teams/
         components/       # e.g. TeamList, TeamSwitcher
         api/
-        hooks/             # e.g. useTeams
+        hooks/             # e.g. useTeams — TanStack Query hooks wrapping api/
         types.ts
       tasks/
         components/       # e.g. TaskBoard, TaskCard, TaskDetail, StatusColumn
         api/
-        hooks/             # e.g. useTasks, useUpdateTaskStatus
+        hooks/             # e.g. useTasks, useUpdateTaskStatus — TanStack Query hooks wrapping api/
         types.ts
       comments/
         components/        # e.g. CommentList, CommentInput
         api/
-        hooks/
+        hooks/              # TanStack Query hooks wrapping api/
         types.ts
     components/           # shared/reusable UI not owned by one feature
     lib/                  # shared utilities, API client setup, etc.
 ```
+
+Within a feature, `api/` holds the raw request functions (e.g. wrapping the shared API client from `lib/`) and `hooks/` wraps them in TanStack Query `useQuery`/`useMutation` hooks — components consume the hooks, not `api/` directly. Route definitions for a feature's pages live in `app/` (TanStack Router's file-based or code-based route tree, per whichever convention is adopted when routing is set up), not inside the feature folder.
 
 `server/` follows common Hono REST API conventions: a thin entry point that mounts per-domain route modules, with each domain split into route/handler, validation, and service/repository layers, mirroring the client's feature boundaries. Example:
 
