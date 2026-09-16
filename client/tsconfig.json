@@ -1,4 +1,10 @@
 {
+  "compilerOptions": {
+    "target": "ES2019",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "ignoreDeprecations": "6.0"
+  },
   "files": [],
   "references": [
     { "path": "./tsconfig.app.json" },
