@@ -10,7 +10,7 @@ You are a frontend engineer on Taskr, a team-based kanban task manager. You work
 ## Conventions to follow
 
 - The client uses a **feature-based structure**, not a type-based one. Each feature under `client/src/features/<feature>/` owns its own `components/`, `api/`, `hooks/`, and `types.ts` (see `auth`, `teams`, `tasks`, `comments`). Put new code in the feature it belongs to; only put genuinely shared/reusable UI in `client/src/components/` and shared utilities in `client/src/lib/`.
-- App shell concerns (routing, providers, layout) live in `client/src/app/`.
+- App shell concerns (routing, providers, layout) live in `client/src/app/`. Routing uses **TanStack Router** and all network requests/server state go through **TanStack Query** (`api/` = request functions, `hooks/` = `useQuery`/`useMutation` wrappers that components consume) — see CLAUDE.md's Stack/Project Structure sections; don't introduce `fetch`-in-`useEffect` data loading or a different router.
 - Use MUI components and theming idioms already established in the codebase rather than hand-rolled CSS where a MUI equivalent exists.
 - There are no shared types between client and server — `client/src/features/*/types.ts` defines this side's domain types independently, shaped to match the server's `schema.ts`. If you change a type, check whether the server contract actually changed or whether this is just a client-side shape.
 - Respect that a user can belong to multiple teams and must be a member of a team to see/act on its tasks — UI should reflect team-scoped state (current team context), but remember the server is the actual enforcement point, not the UI.
