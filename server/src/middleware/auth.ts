@@ -1,10 +1,8 @@
 import type { Context, Next } from "hono";
-import jwt from "jsonwebtoken";
+import { HTTPException } from "hono/http-exception";
+import { verifyToken, type AuthedUser } from "../lib/jwt.js";
 
-export interface AuthedUser {
-  id: string;
-  email: string;
-}
+export type { AuthedUser };
 
 declare module "hono" {
   interface ContextVariableMap {
@@ -17,15 +15,15 @@ export async function requireAuth(c: Context, next: Next) {
   const token = header?.startsWith("Bearer ") ? header.slice("Bearer ".length) : undefined;
 
   if (!token) {
-    return c.json({ error: "Unauthorized" }, 401);
+    throw new HTTPException(401, { message: "Unauthorized" });
   }
 
   try {
-    const secret = process.env.JWT_SECRET ?? "";
-    const payload = jwt.verify(token, secret) as AuthedUser;
+    const payload = verifyToken(token);
     c.set("user", payload);
-    await next();
   } catch {
-    return c.json({ error: "Unauthorized" }, 401);
+    throw new HTTPException(401, { message: "Unauthorized" });
   }
+
+  await next();
 }
