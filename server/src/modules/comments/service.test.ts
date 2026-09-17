@@ -94,15 +94,12 @@ describe("comments service", () => {
       expect(mocked.createComment).not.toHaveBeenCalled();
     });
 
-    it("creates a comment with author_id set from the requester, ignoring mediaIds", async () => {
+    it("creates a comment with author_id set from the requester", async () => {
       mocked.findTaskTeamId.mockResolvedValueOnce(TEAM_ID);
       mocked.findMembership.mockResolvedValueOnce(membership("member"));
       mocked.createComment.mockResolvedValueOnce(comment({ author_id: MEMBER_ID }));
 
-      const result = await createComment(TASK_ID, MEMBER_ID, {
-        body: "hi",
-        mediaIds: ["11111111-1111-1111-1111-111111111111"],
-      });
+      const result = await createComment(TASK_ID, MEMBER_ID, { body: "hi" });
 
       expect(result.author_id).toBe(MEMBER_ID);
       expect(mocked.createComment).toHaveBeenCalledWith(TASK_ID, MEMBER_ID, "hi");

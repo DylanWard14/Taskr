@@ -31,9 +31,11 @@ export async function getCommentsForTask(taskId: string, userId: string): Promis
   return repository.listCommentsForTask(taskId);
 }
 
-// mediaIds is accepted by the schema but intentionally ignored for now —
-// linking uploaded media to a comment is wired up once the media upload flow
-// (PR9) exists to set comment_id on an already-uploaded media row.
+// Attaching media to a comment is a separate step: create the comment first,
+// then upload media (POST /media/upload) with this comment's id as the
+// target — there's no "create comment with media ids" flow, since media
+// upload always requires an existing task/comment target (see
+// modules/media).
 export async function createComment(
   taskId: string,
   userId: string,
