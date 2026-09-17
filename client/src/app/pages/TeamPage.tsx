@@ -86,7 +86,7 @@ export function TeamPage() {
           )}
         </Paper>
 
-        <TaskBoard teamId={team.id} members={members} viewerRole={viewerRole} />
+        <TaskBoard teamId={team.id} members={members} viewerRole={viewerRole} viewerUserId={user.id} />
       </Stack>
     </Container>
   )

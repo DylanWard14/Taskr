@@ -46,7 +46,7 @@ function renderBoard(viewerRole: TeamMember['role'] = 'owner') {
   const queryClient = new QueryClient()
   return render(
     <QueryClientProvider client={queryClient}>
-      <TaskBoard teamId="team-1" members={members} viewerRole={viewerRole} />
+      <TaskBoard teamId="team-1" members={members} viewerRole={viewerRole} viewerUserId="u-owner" />
     </QueryClientProvider>,
   )
 }

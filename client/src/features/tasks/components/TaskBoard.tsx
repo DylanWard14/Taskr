@@ -29,9 +29,10 @@ export interface TaskBoardProps {
   teamId: string
   members: TeamMember[]
   viewerRole: TeamRole
+  viewerUserId: string
 }
 
-export function TaskBoard({ teamId, members, viewerRole }: TaskBoardProps) {
+export function TaskBoard({ teamId, members, viewerRole, viewerUserId }: TaskBoardProps) {
   const [createOpen, setCreateOpen] = useState(false)
   const tasksQuery = useTasks(teamId)
 
@@ -67,6 +68,7 @@ export function TaskBoard({ teamId, members, viewerRole }: TaskBoardProps) {
             tasks={groups[column.status]}
             members={members}
             viewerRole={viewerRole}
+            viewerUserId={viewerUserId}
           />
         ))}
       </Stack>
