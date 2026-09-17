@@ -5,10 +5,18 @@ import Card from '@mui/material/Card'
 import CardActions from '@mui/material/CardActions'
 import CardContent from '@mui/material/CardContent'
 import Chip from '@mui/material/Chip'
+import Dialog from '@mui/material/Dialog'
+import DialogActions from '@mui/material/DialogActions'
+import DialogContent from '@mui/material/DialogContent'
+import DialogTitle from '@mui/material/DialogTitle'
+import Divider from '@mui/material/Divider'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
+import { CommentInput } from '../../comments/components/CommentInput'
+import { CommentList } from '../../comments/components/CommentList'
+import { useComments } from '../../comments/hooks/useComments'
 import { getErrorMessage } from '../../../lib/errors'
 import { useDeleteTask } from '../hooks/useDeleteTask'
 import { useUpdateTask } from '../hooks/useUpdateTask'
@@ -36,14 +44,19 @@ export interface TaskCardProps {
   task: Task
   members: TeamMember[]
   viewerRole: TeamRole
+  viewerUserId: string
 }
 
-export function TaskCard({ teamId, task, members, viewerRole }: TaskCardProps) {
+export function TaskCard({ teamId, task, members, viewerRole, viewerUserId }: TaskCardProps) {
   const [moveAnchorEl, setMoveAnchorEl] = useState<HTMLElement | null>(null)
   const [editOpen, setEditOpen] = useState(false)
+  const [commentsOpen, setCommentsOpen] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
   const updateTask = useUpdateTask(teamId)
   const deleteTask = useDeleteTask(teamId)
+  // Deferred until the dialog is actually opened, so a board with N cards
+  // doesn't fire N comment-count queries up front.
+  const commentsQuery = useComments(task.id, { enabled: commentsOpen })
 
   const assignee = members.find((member) => member.user_id === task.assignee_id)
   const otherStatuses = ALL_STATUSES.filter((status) => status !== task.status)
@@ -114,6 +127,9 @@ export function TaskCard({ teamId, task, members, viewerRole }: TaskCardProps) {
             Delete
           </Button>
         )}
+        <Button size="small" onClick={() => setCommentsOpen(true)}>
+          Comments{commentsQuery.data ? ` (${commentsQuery.data.length})` : ''}
+        </Button>
       </CardActions>
       <TaskFormDialog
         teamId={teamId}
@@ -123,6 +139,33 @@ export function TaskCard({ teamId, task, members, viewerRole }: TaskCardProps) {
         mode="edit"
         task={task}
       />
+      <Dialog open={commentsOpen} onClose={() => setCommentsOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle>Comments — {task.title}</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2}>
+            {commentsQuery.isLoading && (
+              <Typography variant="body2" color="text.secondary">
+                Loading comments…
+              </Typography>
+            )}
+            {commentsQuery.isError && <Alert severity="error">Failed to load comments. Please try again.</Alert>}
+            {commentsQuery.data && (
+              <CommentList
+                taskId={task.id}
+                comments={commentsQuery.data}
+                members={members}
+                viewerUserId={viewerUserId}
+                viewerRole={viewerRole}
+              />
+            )}
+            <Divider />
+            <CommentInput taskId={task.id} />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCommentsOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Card>
   )
 }

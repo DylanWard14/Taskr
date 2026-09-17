@@ -12,9 +12,10 @@ export interface StatusColumnProps {
   tasks: Task[]
   members: TeamMember[]
   viewerRole: TeamRole
+  viewerUserId: string
 }
 
-export function StatusColumn({ teamId, title, tasks, members, viewerRole }: StatusColumnProps) {
+export function StatusColumn({ teamId, title, tasks, members, viewerRole, viewerUserId }: StatusColumnProps) {
   return (
     <Paper variant="outlined" sx={{ p: 2, flex: 1, minWidth: 0 }}>
       <Typography variant="h6" gutterBottom>
@@ -27,7 +28,14 @@ export function StatusColumn({ teamId, title, tasks, members, viewerRole }: Stat
           </Typography>
         )}
         {tasks.map((task) => (
-          <TaskCard key={task.id} teamId={teamId} task={task} members={members} viewerRole={viewerRole} />
+          <TaskCard
+            key={task.id}
+            teamId={teamId}
+            task={task}
+            members={members}
+            viewerRole={viewerRole}
+            viewerUserId={viewerUserId}
+          />
         ))}
       </Stack>
     </Paper>

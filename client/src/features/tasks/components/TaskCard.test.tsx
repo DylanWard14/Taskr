@@ -7,9 +7,12 @@ import { ApiError } from '../../../lib/api-client'
 import type { Task } from '../types'
 import type { TeamMember } from '../../teams/types'
 
-const { updateTaskMock, deleteTaskMock } = vi.hoisted(() => ({
+const { updateTaskMock, deleteTaskMock, getCommentsMock, createCommentMock, deleteCommentMock } = vi.hoisted(() => ({
   updateTaskMock: vi.fn(),
   deleteTaskMock: vi.fn(),
+  getCommentsMock: vi.fn(),
+  createCommentMock: vi.fn(),
+  deleteCommentMock: vi.fn(),
 }))
 
 vi.mock('../api/update-task', () => ({
@@ -18,6 +21,18 @@ vi.mock('../api/update-task', () => ({
 
 vi.mock('../api/delete-task', () => ({
   deleteTask: deleteTaskMock,
+}))
+
+vi.mock('../../comments/api/get-comments', () => ({
+  getComments: getCommentsMock,
+}))
+
+vi.mock('../../comments/api/create-comment', () => ({
+  createComment: createCommentMock,
+}))
+
+vi.mock('../../comments/api/delete-comment', () => ({
+  deleteComment: deleteCommentMock,
 }))
 
 const members: TeamMember[] = [
@@ -39,11 +54,11 @@ const baseTask: Task = {
   updated_at: '2026-01-01T00:00:00.000Z',
 }
 
-function renderCard(task: Task, viewerRole: TeamMember['role']) {
+function renderCard(task: Task, viewerRole: TeamMember['role'], viewerUserId = 'u-owner') {
   const queryClient = new QueryClient()
   return render(
     <QueryClientProvider client={queryClient}>
-      <TaskCard teamId="team-1" task={task} members={members} viewerRole={viewerRole} />
+      <TaskCard teamId="team-1" task={task} members={members} viewerRole={viewerRole} viewerUserId={viewerUserId} />
     </QueryClientProvider>,
   )
 }
@@ -52,6 +67,10 @@ describe('TaskCard', () => {
   beforeEach(() => {
     updateTaskMock.mockReset()
     deleteTaskMock.mockReset()
+    getCommentsMock.mockReset()
+    createCommentMock.mockReset()
+    deleteCommentMock.mockReset()
+    getCommentsMock.mockResolvedValue([])
   })
 
   it('resolves and shows the assignee name from the members list', () => {
@@ -135,5 +154,34 @@ describe('TaskCard', () => {
     await user.click(screen.getByRole('button', { name: /delete/i }))
 
     expect(await screen.findByText(/only team owners and admins can delete tasks/i)).toBeInTheDocument()
+  })
+
+  it('opens the comments dialog, fetches comments on demand, and shows the count', async () => {
+    getCommentsMock.mockResolvedValue([
+      {
+        id: 'c1',
+        task_id: 't1',
+        author_id: 'u-member',
+        body: 'Looks good to me',
+        created_at: '2026-01-01T00:00:00.000Z',
+        updated_at: '2026-01-01T00:00:00.000Z',
+      },
+    ])
+    const user = userEvent.setup()
+    renderCard(baseTask, 'owner')
+
+    // Not fetched until the dialog is actually opened.
+    expect(getCommentsMock).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: /^comments$/i }))
+
+    expect(await screen.findByText('Looks good to me')).toBeInTheDocument()
+    expect(getCommentsMock).toHaveBeenCalledWith('t1')
+
+    // The trigger button itself is aria-hidden while the modal dialog is
+    // open (MUI hides the rest of the page from the accessibility tree), so
+    // close the dialog before re-querying it to confirm the count updated.
+    await user.click(screen.getByRole('button', { name: /^close$/i }))
+    expect(await screen.findByRole('button', { name: /comments \(1\)/i })).toBeInTheDocument()
   })
 })
