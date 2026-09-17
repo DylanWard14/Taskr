@@ -7,12 +7,22 @@ import { ApiError } from '../../../lib/api-client'
 import type { Task } from '../types'
 import type { TeamMember } from '../../teams/types'
 
-const { updateTaskMock, deleteTaskMock, getCommentsMock, createCommentMock, deleteCommentMock } = vi.hoisted(() => ({
+const {
+  updateTaskMock,
+  deleteTaskMock,
+  getCommentsMock,
+  createCommentMock,
+  deleteCommentMock,
+  listMediaMock,
+  uploadMediaMock,
+} = vi.hoisted(() => ({
   updateTaskMock: vi.fn(),
   deleteTaskMock: vi.fn(),
   getCommentsMock: vi.fn(),
   createCommentMock: vi.fn(),
   deleteCommentMock: vi.fn(),
+  listMediaMock: vi.fn(),
+  uploadMediaMock: vi.fn(),
 }))
 
 vi.mock('../api/update-task', () => ({
@@ -33,6 +43,14 @@ vi.mock('../../comments/api/create-comment', () => ({
 
 vi.mock('../../comments/api/delete-comment', () => ({
   deleteComment: deleteCommentMock,
+}))
+
+vi.mock('../../media/api/list-media', () => ({
+  listMedia: listMediaMock,
+}))
+
+vi.mock('../../media/api/upload-media', () => ({
+  uploadMedia: uploadMediaMock,
 }))
 
 const members: TeamMember[] = [
@@ -70,7 +88,13 @@ describe('TaskCard', () => {
     getCommentsMock.mockReset()
     createCommentMock.mockReset()
     deleteCommentMock.mockReset()
+    listMediaMock.mockReset()
+    uploadMediaMock.mockReset()
     getCommentsMock.mockResolvedValue([])
+    // Each rendered comment eagerly fetches its own attachments via
+    // MediaGallery — default to an empty list so comment-focused tests
+    // don't need to care about it.
+    listMediaMock.mockResolvedValue([])
   })
 
   it('resolves and shows the assignee name from the members list', () => {
@@ -183,5 +207,32 @@ describe('TaskCard', () => {
     // close the dialog before re-querying it to confirm the count updated.
     await user.click(screen.getByRole('button', { name: /^close$/i }))
     expect(await screen.findByRole('button', { name: /comments \(1\)/i })).toBeInTheDocument()
+  })
+
+  it('opens the attachments dialog and fetches media on demand', async () => {
+    listMediaMock.mockResolvedValue([
+      {
+        id: 'm1',
+        url: '/media/m1/file',
+        content_type: 'image/png',
+        uploaded_by: 'u-owner',
+        task_id: 't1',
+        comment_id: null,
+        created_at: '2026-01-01T00:00:00.000Z',
+        updated_at: '2026-01-01T00:00:00.000Z',
+      },
+    ])
+    const user = userEvent.setup()
+    renderCard(baseTask, 'owner')
+
+    // Not fetched until the dialog is actually opened.
+    expect(listMediaMock).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: /^attachments$/i }))
+
+    await waitFor(() => {
+      expect(listMediaMock).toHaveBeenCalledWith({ taskId: 't1' })
+    })
+    expect(await screen.findByRole('button', { name: /add attachment/i })).toBeInTheDocument()
   })
 })
