@@ -1,5 +1,6 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { errorHandler } from "./middleware/error-handler.js";
 import { authRoutes } from "./modules/auth/routes.js";
 import { teamsRoutes } from "./modules/teams/routes.js";
@@ -8,6 +9,15 @@ import { commentsRoutes } from "./modules/comments/routes.js";
 import { mediaRoutes } from "./modules/media/routes.js";
 
 const app = new Hono();
+
+app.use(
+  "*",
+  cors({
+    origin: process.env.CORS_ORIGIN ?? "http://localhost:5173",
+    allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 
 app.onError(errorHandler);
 
