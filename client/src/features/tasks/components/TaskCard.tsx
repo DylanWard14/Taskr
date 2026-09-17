@@ -17,6 +17,8 @@ import Typography from '@mui/material/Typography'
 import { CommentInput } from '../../comments/components/CommentInput'
 import { CommentList } from '../../comments/components/CommentList'
 import { useComments } from '../../comments/hooks/useComments'
+import { MediaGallery } from '../../media/components/MediaGallery'
+import { MediaUploadButton } from '../../media/components/MediaUploadButton'
 import { getErrorMessage } from '../../../lib/errors'
 import { useDeleteTask } from '../hooks/useDeleteTask'
 import { useUpdateTask } from '../hooks/useUpdateTask'
@@ -51,6 +53,7 @@ export function TaskCard({ teamId, task, members, viewerRole, viewerUserId }: Ta
   const [moveAnchorEl, setMoveAnchorEl] = useState<HTMLElement | null>(null)
   const [editOpen, setEditOpen] = useState(false)
   const [commentsOpen, setCommentsOpen] = useState(false)
+  const [attachmentsOpen, setAttachmentsOpen] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
   const updateTask = useUpdateTask(teamId)
   const deleteTask = useDeleteTask(teamId)
@@ -130,6 +133,9 @@ export function TaskCard({ teamId, task, members, viewerRole, viewerUserId }: Ta
         <Button size="small" onClick={() => setCommentsOpen(true)}>
           Comments{commentsQuery.data ? ` (${commentsQuery.data.length})` : ''}
         </Button>
+        <Button size="small" onClick={() => setAttachmentsOpen(true)}>
+          Attachments
+        </Button>
       </CardActions>
       <TaskFormDialog
         teamId={teamId}
@@ -164,6 +170,24 @@ export function TaskCard({ teamId, task, members, viewerRole, viewerUserId }: Ta
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setCommentsOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog open={attachmentsOpen} onClose={() => setAttachmentsOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle>Attachments — {task.title}</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2}>
+            <MediaGallery
+              target={{ taskId: task.id }}
+              viewerUserId={viewerUserId}
+              viewerRole={viewerRole}
+              enabled={attachmentsOpen}
+            />
+            <Divider />
+            <MediaUploadButton target={{ taskId: task.id }} />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAttachmentsOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
     </Card>

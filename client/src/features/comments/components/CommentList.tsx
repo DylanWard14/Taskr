@@ -7,6 +7,8 @@ import ListItemText from '@mui/material/ListItemText'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { getErrorMessage } from '../../../lib/errors'
+import { MediaGallery } from '../../media/components/MediaGallery'
+import { MediaUploadButton } from '../../media/components/MediaUploadButton'
 import { useDeleteComment } from '../hooks/useDeleteComment'
 import { canDeleteComment } from '../permissions'
 import type { Comment } from '../types'
@@ -82,8 +84,16 @@ export function CommentList({ taskId, comments, members, viewerUserId, viewerRol
                     </Typography>
                   </Stack>
                 }
-                secondary={comment.body}
-                slotProps={{ secondary: { sx: { whiteSpace: 'pre-wrap' } } }}
+                secondary={
+                  <Stack spacing={1} sx={{ mt: 0.5 }}>
+                    <Typography variant="body2" color="text.secondary" component="span" sx={{ whiteSpace: 'pre-wrap' }}>
+                      {comment.body}
+                    </Typography>
+                    <MediaGallery target={{ commentId: comment.id }} viewerUserId={viewerUserId} viewerRole={viewerRole} />
+                    <MediaUploadButton target={{ commentId: comment.id }} />
+                  </Stack>
+                }
+                slotProps={{ secondary: { component: 'div' } }}
               />
             </ListItem>
           )

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -7,10 +7,17 @@ import { ApiError } from '../../../lib/api-client'
 import type { Comment } from '../types'
 import type { TeamMember } from '../../teams/types'
 
-const { deleteCommentMock } = vi.hoisted(() => ({ deleteCommentMock: vi.fn() }))
+const { deleteCommentMock, listMediaMock } = vi.hoisted(() => ({
+  deleteCommentMock: vi.fn(),
+  listMediaMock: vi.fn(),
+}))
 
 vi.mock('../api/delete-comment', () => ({
   deleteComment: deleteCommentMock,
+}))
+
+vi.mock('../../media/api/list-media', () => ({
+  listMedia: listMediaMock,
 }))
 
 const members: TeamMember[] = [
@@ -48,6 +55,10 @@ function renderList(comments: Comment[], viewerUserId: string, viewerRole: TeamM
 describe('CommentList', () => {
   beforeEach(() => {
     deleteCommentMock.mockReset()
+    listMediaMock.mockReset()
+    // Each comment eagerly renders its own MediaGallery — default to an
+    // empty list so comment-focused assertions don't need to care about it.
+    listMediaMock.mockResolvedValue([])
   })
 
   it('shows an empty state when there are no comments', () => {
@@ -91,6 +102,15 @@ describe('CommentList', () => {
   it('shows a delete button for an admin on someone else\'s comment', () => {
     renderList([comment({ author_id: 'u-member' })], 'u-admin', 'admin')
     expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument()
+  })
+
+  it('renders a media gallery and upload control under each comment', async () => {
+    renderList([comment({ id: 'c1' })], 'u-owner', 'owner')
+
+    await waitFor(() => {
+      expect(listMediaMock).toHaveBeenCalledWith({ commentId: 'c1' })
+    })
+    expect(screen.getByRole('button', { name: /add attachment/i })).toBeInTheDocument()
   })
 
   it('surfaces a 403 error if a delete attempt is rejected server-side', async () => {
