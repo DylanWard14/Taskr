@@ -32,6 +32,7 @@ services:
         condition: service_healthy
     volumes:
       - ./server/src:/app/server/src
+      - media-uploads:/app/server/uploads
 
   client:
     build:
@@ -49,3 +50,4 @@ services:
 
 volumes:
   db-data:
+  media-uploads:
